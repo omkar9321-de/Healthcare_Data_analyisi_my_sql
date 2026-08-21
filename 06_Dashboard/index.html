@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Healthcare Analytics — Operations Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="chart.umd.js"></script>
+<style>
+:root{
+  --bg:#080C16;
+  --bg-grid: #0B1120;
+  --panel:#10182B;
+  --panel-hover:#141F38;
+  --border:#212D4C;
+  --border-soft:#1A2440;
+  --text:#EAF0FB;
+  --muted:#8291B5;
+  --muted-dim:#5C6889;
+  --mint:#35E0C2;
+  --mint-dim: rgba(53,224,194,0.14);
+  --coral:#FF6B6B;
+  --coral-dim: rgba(255,107,107,0.14);
+  --gold:#F5B942;
+  --gold-dim: rgba(245,185,66,0.14);
+  --violet:#8C7CFF;
+  --violet-dim: rgba(140,124,255,0.14);
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'IBM Plex Sans', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(53,224,194,0.07), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(140,124,255,0.06), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+
+/* ============ Layout shell ============ */
+.shell{max-width:1400px; margin:0 auto; padding:0 32px 80px;}
+a{color:inherit;}
+
+/* ============ Header ============ */
+header.top{
+  padding:28px 32px 0;
+  max-width:1400px; margin:0 auto;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:14px;}
+.brand-mark{
+  width:44px; height:44px; border-radius:11px;
+  background:linear-gradient(135deg, var(--mint), #1BA88C);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(53,224,194,0.25), 0 8px 24px -8px rgba(53,224,194,0.5);
+}
+.brand-mark svg{width:24px; height:24px;}
+.brand-text .eyebrow{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--mint); font-weight:600; margin-bottom:2px;
+}
+.brand-text h1{font-family:var(--font-display); font-size:22px; font-weight:600; letter-spacing:-0.01em;}
+.header-meta{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+.status-pill{
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:12px; color:var(--muted);
+  background:var(--panel); border:1px solid var(--border-soft);
+  padding:7px 14px 7px 10px; border-radius:999px;
+}
+.pulse-dot{width:8px; height:8px; border-radius:50%; background:var(--mint); position:relative; flex-shrink:0;}
+.pulse-dot::after{
+  content:''; position:absolute; inset:-4px; border-radius:50%; border:1px solid var(--mint);
+  animation:pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring{0%{transform:scale(0.6); opacity:1;} 100%{transform:scale(2.2); opacity:0;}}
+.timestamp{font-family:var(--font-mono); font-size:12px; color:var(--muted-dim);}
+
+/* ECG divider */
+.ecg-wrap{max-width:1400px; margin:22px auto 0; padding:0 32px; overflow:hidden;}
+.ecg-line{width:100%; height:46px; display:block;}
+.ecg-line path{
+  fill:none; stroke:var(--mint); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px rgba(53,224,194,0.5));
+  stroke-dasharray:1900; stroke-dashoffset:1900;
+  animation:draw-ecg 3.4s ease-out forwards, ecg-glow 2.4s ease-in-out 3.4s infinite;
+}
+@keyframes draw-ecg{to{stroke-dashoffset:0;}}
+@keyframes ecg-glow{0%,100%{opacity:0.55;} 50%{opacity:1;}}
+.ecg-baseline{stroke:var(--border-soft); stroke-width:1;}
+
+/* ============ Nav Tabs ============ */
+.tabbar{
+  display:flex; gap:4px; margin:28px 0 0; padding:0 32px; max-width:1400px; margin-left:auto; margin-right:auto;
+  overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--border-soft);
+}
+.tabbar::-webkit-scrollbar{display:none;}
+.tab-btn{
+  font-family:var(--font-mono); font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase;
+  color:var(--muted); background:none; border:none; padding:13px 18px; cursor:pointer;
+  white-space:nowrap; position:relative; font-weight:500; transition:color 0.15s;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--mint);}
+.tab-btn.active::after{
+  content:''; position:absolute; left:12px; right:12px; bottom:-1px; height:2px;
+  background:var(--mint); border-radius:2px; box-shadow:0 0 8px rgba(53,224,194,0.7);
+}
+.tab-btn .n{color:var(--muted-dim); margin-right:6px;}
+
+/* ============ KPI Strip ============ */
+.kpi-strip{
+  display:grid; grid-template-columns:repeat(6, 1fr); gap:12px;
+  padding:24px 32px 0; max-width:1400px; margin:0 auto;
+}
+@media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:640px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{
+  background:var(--panel); border:1px solid var(--border-soft); border-radius:12px;
+  padding:16px 16px 14px; position:relative; overflow:hidden;
+}
+.kpi-card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--kpi-accent, var(--mint)); opacity:0.8;
+}
+.kpi-label{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:8px;}
+.kpi-value{font-family:var(--font-mono); font-size:26px; font-weight:600; color:var(--text); line-height:1; letter-spacing:-0.01em;}
+.kpi-sub{font-size:11.5px; color:var(--muted-dim); margin-top:6px;}
+
+/* ============ Sections ============ */
+.tab-panel{display:none; padding-top:28px; animation:fadein 0.35s ease;}
+.tab-panel.active{display:block;}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:14px; flex-wrap:wrap;}
+.section-head h2{font-family:var(--font-display); font-size:17px; font-weight:600;}
+.section-head .desc{font-size:12.5px; color:var(--muted); max-width:520px;}
+
+.grid{display:grid; gap:16px; margin-bottom:16px;}
+.grid.cols-3{grid-template-columns:2fr 1fr;}
+.grid.cols-2{grid-template-columns:1fr 1fr;}
+.grid.cols-thirds{grid-template-columns:repeat(3, 1fr);}
+@media(max-width:900px){.grid.cols-3,.grid.cols-2,.grid.cols-thirds{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--panel); border:1px solid var(--border-soft); border-radius:14px; padding:20px;
+}
+.card h3{font-family:var(--font-display); font-size:14.5px; font-weight:600; margin-bottom:2px;}
+.card .card-note{font-size:11.5px; color:var(--muted-dim); margin-bottom:14px;}
+.chart-holder{position:relative; width:100%;}
+.chart-holder.h-260{height:260px;}
+.chart-holder.h-300{height:300px;}
+.chart-holder.h-340{height:340px;}
+
+/* ============ Tables ============ */
+table.data-table{width:100%; border-collapse:collapse; font-size:12.8px;}
+table.data-table thead th{
+  text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--muted); font-weight:500; padding:0 10px 10px; border-bottom:1px solid var(--border-soft);
+  cursor:pointer; user-select:none; white-space:nowrap;
+}
+table.data-table thead th:hover{color:var(--mint);}
+table.data-table thead th .arrow{opacity:0.4; margin-left:4px; font-size:10px;}
+table.data-table tbody td{padding:10px 10px; border-bottom:1px solid var(--border-soft); color:var(--text); white-space:nowrap;}
+table.data-table tbody tr:hover{background:var(--panel-hover);}
+table.data-table tbody tr:last-child td{border-bottom:none;}
+.mono{font-family:var(--font-mono);}
+.pill{
+  display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-family:var(--font-mono); font-weight:500;
+}
+.pill.paid{background:var(--mint-dim); color:var(--mint);}
+.pill.pending{background:var(--gold-dim); color:var(--gold);}
+.pill.rejected, .pill.cancelled{background:var(--coral-dim); color:var(--coral);}
+.pill.completed{background:var(--mint-dim); color:var(--mint);}
+.pill.scheduled{background:var(--violet-dim); color:var(--violet);}
+.pill.active{background:var(--mint-dim); color:var(--mint);}
+.pill.onleave, .pill.retired{background:var(--gold-dim); color:var(--gold);}
+.right{text-align:right;}
+.table-scroll{max-height:360px; overflow-y:auto;}
+.table-scroll::-webkit-scrollbar{width:6px;}
+.table-scroll::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;}
+
+.search-box{
+  background:var(--bg-grid); border:1px solid var(--border-soft); border-radius:8px; padding:8px 12px;
+  font-family:var(--font-mono); font-size:12px; color:var(--text); width:220px;
+}
+.search-box::placeholder{color:var(--muted-dim);}
+.search-box:focus{outline:none; border-color:var(--mint);}
+
+.legend-row{display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:12px;}
+.legend-item{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted);}
+.legend-swatch{width:9px; height:9px; border-radius:2px;}
+
+/* stat mini row */
+.stat-mini-row{display:flex; gap:14px; flex-wrap:wrap; margin-top:4px;}
+.stat-mini{flex:1; min-width:120px;}
+.stat-mini .v{font-family:var(--font-mono); font-size:20px; font-weight:600;}
+.stat-mini .l{font-size:11px; color:var(--muted-dim); margin-top:2px;}
+
+/* ============ Footer ============ */
+footer{
+  max-width:1400px; margin:48px auto 0; padding:24px 32px 0; border-top:1px solid var(--border-soft);
+  display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-start;
+}
+footer .note{font-size:12px; color:var(--muted-dim); max-width:640px; line-height:1.6;}
+footer .stack{display:flex; gap:8px; flex-wrap:wrap;}
+.badge{font-family:var(--font-mono); font-size:10.5px; color:var(--muted); border:1px solid var(--border-soft); padding:4px 10px; border-radius:6px;}
+
+::selection{background:var(--mint); color:#04140F;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H7L9.5 5L14 19L16.5 12H21" stroke="#04140F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="brand-text">
+      <div class="eyebrow">Healthcare Analytics DB</div>
+      <h1>Operations &amp; Revenue Console</h1>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="status-pill"><span class="pulse-dot"></span><span id="statusText">Dataset live · computed from SQL</span></div>
+    <div class="timestamp" id="timestamp"></div>
+  </div>
+</header>
+
+<div class="ecg-wrap">
+  <svg class="ecg-line" viewBox="0 0 1200 46" preserveAspectRatio="none">
+    <line class="ecg-baseline" x1="0" y1="23" x2="1200" y2="23"/>
+    <path d="M0,23 L140,23 L162,23 L172,6 L182,40 L192,14 L202,23 L360,23 L382,23 L392,6 L402,40 L412,14 L422,23 L580,23 L602,23 L612,6 L622,40 L632,14 L642,23 L800,23 L822,23 L832,6 L842,40 L852,14 L862,23 L1020,23 L1042,23 L1052,6 L1062,40 L1072,14 L1082,23 L1200,23"/>
+  </svg>
+</div>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab-btn active" data-tab="overview"><span class="n">01</span>Overview</button>
+  <button class="tab-btn" data-tab="patients"><span class="n">02</span>Patients</button>
+  <button class="tab-btn" data-tab="clinical"><span class="n">03</span>Doctors &amp; Departments</button>
+  <button class="tab-btn" data-tab="revenue"><span class="n">04</span>Revenue &amp; Billing</button>
+  <button class="tab-btn" data-tab="ops"><span class="n">05</span>Clinical Operations</button>
+</nav>
+
+<div class="shell">
+
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section class="tab-panel active" id="tab-overview">
+    <div class="section-head">
+      <div><h2>Hospital Performance Overview</h2><div class="desc">Revenue trajectory, departmental contribution, and appointment throughput across the network.</div></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>Monthly Net Revenue &amp; Cumulative Trend</h3>
+        <div class="card-note">Paid bills only · net_amount = total − discount − insurance_amount</div>
+        <div class="chart-holder h-300"><canvas id="chartRevenueTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Appointment Status Mix</h3>
+        <div class="card-note">All appointments, network-wide</div>
+        <div class="chart-holder h-300"><canvas id="chartApptStatus"></canvas></div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Top Departments by Revenue</h3>
+        <div class="card-note">Sum of net_amount on paid bills, joined via doctor → department</div>
+        <div class="chart-holder h-300"><canvas id="chartTopDepts"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Payment Mode Composition</h3>
+        <div class="card-note">Share of paid revenue by settlement channel</div>
+        <div class="chart-holder h-300"><canvas id="chartPaymentModeOverview"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PATIENTS ============ -->
+  <section class="tab-panel" id="tab-patients">
+    <div class="section-head">
+      <div><h2>Patient Population</h2><div class="desc">Demographics, geography, insurance coverage and highest-value patient relationships.</div></div>
+    </div>
+    <div class="grid cols-thirds">
+      <div class="card">
+        <h3>Gender Distribution</h3>
+        <div class="chart-holder h-260"><canvas id="chartPatientGender"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Blood Group Distribution</h3>
+        <div class="chart-holder h-260"><canvas id="chartBloodGroup"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Insurance Coverage</h3>
+        <div class="chart-holder h-260"><canvas id="chartInsurance"></canvas></div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Top 10 Patient Cities</h3>
+        <div class="card-note">Registered patient count by city</div>
+        <div class="chart-holder h-300"><canvas id="chartTopCities"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Top Spending Patients</h3>
+        <div class="card-note">Lifetime paid net revenue, top 8</div>
+        <div class="table-scroll">
+          <table class="data-table" id="tblTopPatients">
+            <thead><tr><th>Patient</th><th>City</th><th class="right">Total Paid (₹)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div><h3>VIP Segment — Top Decile Lifetime Value</h3><div class="card-note">Highest-spending 10% of paying patients, ranked by total settled revenue</div></div>
+        <input class="search-box" id="searchVip" placeholder="Filter by name or city…">
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="tblVip">
+          <thead>
+            <tr>
+              <th data-key="patient_name">Patient <span class="arrow">↕</span></th>
+              <th data-key="city">City <span class="arrow">↕</span></th>
+              <th data-key="total_consultations" class="right">Visits <span class="arrow">↕</span></th>
+              <th data-key="total_spend" class="right">Total Spend (₹) <span class="arrow">↕</span></th>
+              <th data-key="avg_spend_per_visit" class="right">Avg / Visit (₹) <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DOCTORS & DEPARTMENTS ============ -->
+  <section class="tab-panel" id="tab-clinical">
+    <div class="section-head">
+      <div><h2>Doctors &amp; Departments</h2><div class="desc">Clinical staffing, specialization mix, and revenue performance by physician and department.</div></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>Specializations on Staff</h3>
+        <div class="card-note">Doctor count by specialization, all 25 departments</div>
+        <div class="chart-holder h-340"><canvas id="chartSpecializations"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Doctor Status</h3>
+        <div class="chart-holder h-260"><canvas id="chartDoctorStatus"></canvas></div>
+        <div class="stat-mini-row">
+          <div class="stat-mini"><div class="v" id="statSeniorActive">—</div><div class="l">Active, 10+ yrs experience</div></div>
+          <div class="stat-mini"><div class="v" id="statHighLoad">—</div><div class="l">Doctors with 8+ appointments</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Experience vs. Consultation Fee</h3>
+        <div class="card-note">Each point is one doctor · colored by status</div>
+        <div class="chart-holder h-300"><canvas id="chartExpFee"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Department Budget vs. Revenue Generated</h3>
+        <div class="card-note">Annual budget allocation compared to paid revenue attributed to department</div>
+        <div class="chart-holder h-300"><canvas id="chartBudgetVsRevenue"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div><h3>Doctor Revenue Leaderboard</h3><div class="card-note">Top 12 doctors by settled net revenue (vw_doctor_revenue equivalent)</div></div>
+        <input class="search-box" id="searchDoctors" placeholder="Filter by name or specialization…">
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="tblDoctors">
+          <thead>
+            <tr>
+              <th data-key="full_name">Doctor <span class="arrow">↕</span></th>
+              <th data-key="specialization">Specialization <span class="arrow">↕</span></th>
+              <th data-key="department_name">Department <span class="arrow">↕</span></th>
+              <th data-key="total_appointments" class="right">Appointments <span class="arrow">↕</span></th>
+              <th data-key="total_revenue" class="right">Revenue (₹) <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REVENUE & BILLING ============ -->
+  <section class="tab-panel" id="tab-revenue">
+    <div class="section-head">
+      <div><h2>Revenue &amp; Billing</h2><div class="desc">Collections performance, receivables risk, and outstanding accounts.</div></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>Month-over-Month Revenue Growth</h3>
+        <div class="card-note">% change in net collected revenue vs. prior month</div>
+        <div class="chart-holder h-300"><canvas id="chartMoM"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Pending Receivables Risk</h3>
+        <div class="card-note">Share of billed revenue still pending, by payment mode</div>
+        <div class="chart-holder h-300"><canvas id="chartReceivablesRisk"></canvas></div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Billing Funnel by Payment Mode</h3>
+        <div class="card-note">Gross billed → discounts → insurance → net receivable</div>
+        <div class="chart-holder h-300"><canvas id="chartBillingFunnel"></canvas></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+          <div><h3>Outstanding Bills</h3><div class="card-note">Pending payment_status, ranked by days overdue</div></div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="tblOutstanding">
+            <thead><tr><th>Patient</th><th class="right">Net (₹)</th><th>Due Date</th><th class="right">Days Overdue</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLINICAL OPERATIONS ============ -->
+  <section class="tab-panel" id="tab-ops">
+    <div class="section-head">
+      <div><h2>Clinical Operations</h2><div class="desc">Scheduling efficiency, diagnoses, prescribing patterns, and inpatient census.</div></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>Appointment Completion vs. Cancellation by Department</h3>
+        <div class="card-note">Top 12 departments by appointment volume</div>
+        <div class="chart-holder h-340"><canvas id="chartDeptOps"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>30-Day Return Visits</h3>
+        <div class="card-note">Completed visits following a prior completed visit within 30 days</div>
+        <div class="stat-mini-row" style="margin-top:10px;">
+          <div class="stat-mini"><div class="v" id="statReadmit" style="font-size:32px;">—</div><div class="l">Return encounters within 30 days</div></div>
+        </div>
+        <div class="card-note" style="margin-top:14px;">A high count signals either strong continuity-of-care follow-through, or a population needing closer chronic-care management — worth cross-referencing with diagnosis mix.</div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Most Common Diagnoses</h3>
+        <div class="chart-holder h-300"><canvas id="chartDiagnoses"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Most Prescribed Medications</h3>
+        <div class="chart-holder h-300"><canvas id="chartMedications"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Active Inpatient Census</h3>
+      <div class="card-note">Admitted, not yet discharged — longest current stays first (vw_active_inpatients equivalent)</div>
+      <div class="table-scroll">
+        <table class="data-table" id="tblInpatients">
+          <thead><tr><th>Patient</th><th>Admitted</th><th class="right">Stay (days)</th><th>Attending</th><th>Department</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="note" id="footerNote">Loading methodology…</div>
+    <div class="stack">
+      <span class="badge">MySQL 8.0 schema</span>
+      <span class="badge">SQLite compute layer</span>
+      <span class="badge">Chart.js</span>
+      <span class="badge">Static · no backend</span>
+    </div>
+  </footer>
+
+</div>
+
+<script id="dashboard-data" type="application/json">{"kpi":{"total_patients":420,"total_doctors":189,"active_doctors":168,"total_departments":25,"total_appointments":2600,"completed_appointments":1887,"total_revenue":1318271.45,"pending_receivables":153523.88,"avg_bill_value":811.74,"active_inpatients":22,"active_medications":61},"top_departments_revenue":[{"department_name":"Radiology","revenue":118498.7},{"department_name":"Pediatrics","revenue":85022.06},{"department_name":"Pathology","revenue":83743.91},{"department_name":"Infectious Diseases","revenue":82132.11},{"department_name":"ENT","revenue":75002.47},{"department_name":"Nephrology","revenue":72666.85},{"department_name":"Gastroenterology","revenue":67369.88},{"department_name":"Oncology","revenue":65240.13}],"payment_mode_summary":[{"payment_mode":"UPI","paid_count":492,"net_amount":488436.35},{"payment_mode":"Card","paid_count":419,"net_amount":405089.23},{"payment_mode":"Cash","paid_count":292,"net_amount":281248.96},{"payment_mode":"Insurance","paid_count":421,"net_amount":143496.91}],"receivables_risk":[{"payment_mode":"UPI","total_bills_issued":575,"gross_bill_amount":610807.83,"total_discount_given":30576.92,"total_insurance_claimed":0.0,"total_net_amount":580230.91,"pending_receivables":70572.79,"pending_risk_pct":12.16},{"payment_mode":"Card","total_bills_issued":489,"gross_bill_amount":497402.17,"total_discount_given":26322.23,"total_insurance_claimed":0.0,"total_net_amount":471079.94,"pending_receivables":41307.0,"pending_risk_pct":8.77},{"payment_mode":"Cash","total_bills_issued":332,"gross_bill_amount":342351.71,"total_discount_given":19478.8,"total_insurance_claimed":0.0,"total_net_amount":322872.91,"pending_receivables":27443.09,"pending_risk_pct":8.5},{"payment_mode":"Insurance","total_bills_issued":491,"gross_bill_amount":512957.64,"total_discount_given":27795.74,"total_insurance_claimed":317767.82,"total_net_amount":167394.08,"pending_receivables":14201.0,"pending_risk_pct":8.48}],"monthly_revenue_trend":[{"billing_month":"2024-01","monthly_revenue":42955.08,"cumulative_revenue":42955.08,"mom_growth_pct":null},{"billing_month":"2024-02","monthly_revenue":39009.04,"cumulative_revenue":81964.12,"mom_growth_pct":-9.19},{"billing_month":"2024-03","monthly_revenue":43357.88,"cumulative_revenue":125322.0,"mom_growth_pct":11.15},{"billing_month":"2024-04","monthly_revenue":48706.8,"cumulative_revenue":174028.8,"mom_growth_pct":12.34},{"billing_month":"2024-05","monthly_revenue":46347.95,"cumulative_revenue":220376.75,"mom_growth_pct":-4.84},{"billing_month":"2024-06","monthly_revenue":28088.61,"cumulative_revenue":248465.36,"mom_growth_pct":-39.4},{"billing_month":"2024-07","monthly_revenue":49985.02,"cumulative_revenue":298450.38,"mom_growth_pct":77.95},{"billing_month":"2024-08","monthly_revenue":45701.05,"cumulative_revenue":344151.43,"mom_growth_pct":-8.57},{"billing_month":"2024-09","monthly_revenue":34520.92,"cumulative_revenue":378672.35,"mom_growth_pct":-24.46},{"billing_month":"2024-10","monthly_revenue":40968.59,"cumulative_revenue":419640.94,"mom_growth_pct":18.68},{"billing_month":"2024-11","monthly_revenue":34426.79,"cumulative_revenue":454067.73,"mom_growth_pct":-15.97},{"billing_month":"2024-12","monthly_revenue":48647.95,"cumulative_revenue":502715.68,"mom_growth_pct":41.31},{"billing_month":"2025-01","monthly_revenue":48730.69,"cumulative_revenue":551446.37,"mom_growth_pct":0.17},{"billing_month":"2025-02","monthly_revenue":32881.35,"cumulative_revenue":584327.72,"mom_growth_pct":-32.52},{"billing_month":"2025-03","monthly_revenue":49000.31,"cumulative_revenue":633328.03,"mom_growth_pct":49.02},{"billing_month":"2025-04","monthly_revenue":36119.61,"cumulative_revenue":669447.64,"mom_growth_pct":-26.29},{"billing_month":"2025-05","monthly_revenue":50080.58,"cumulative_revenue":719528.22,"mom_growth_pct":38.65},{"billing_month":"2025-06","monthly_revenue":34561.03,"cumulative_revenue":754089.25,"mom_growth_pct":-30.99},{"billing_month":"2025-07","monthly_revenue":32183.74,"cumulative_revenue":786272.99,"mom_growth_pct":-6.88},{"billing_month":"2025-08","monthly_revenue":32794.81,"cumulative_revenue":819067.8,"mom_growth_pct":1.9},{"billing_month":"2025-09","monthly_revenue":43732.53,"cumulative_revenue":862800.33,"mom_growth_pct":33.35},{"billing_month":"2025-10","monthly_revenue":41627.36,"cumulative_revenue":904427.69,"mom_growth_pct":-4.81},{"billing_month":"2025-11","monthly_revenue":38584.7,"cumulative_revenue":943012.39,"mom_growth_pct":-7.31},{"billing_month":"2025-12","monthly_revenue":37662.39,"cumulative_revenue":980674.78,"mom_growth_pct":-2.39},{"billing_month":"2026-01","monthly_revenue":48057.22,"cumulative_revenue":1028732.0,"mom_growth_pct":27.6},{"billing_month":"2026-02","monthly_revenue":41579.82,"cumulative_revenue":1070311.82,"mom_growth_pct":-13.48},{"billing_month":"2026-03","monthly_revenue":51615.27,"cumulative_revenue":1121927.09,"mom_growth_pct":24.14},{"billing_month":"2026-04","monthly_revenue":42125.12,"cumulative_revenue":1164052.21,"mom_growth_pct":-18.39},{"billing_month":"2026-05","monthly_revenue":46056.55,"cumulative_revenue":1210108.76,"mom_growth_pct":9.33},{"billing_month":"2026-06","monthly_revenue":43090.97,"cumulative_revenue":1253199.73,"mom_growth_pct":-6.44},{"billing_month":"2026-07","monthly_revenue":44606.78,"cumulative_revenue":1297806.51,"mom_growth_pct":3.52},{"billing_month":"2026-08","monthly_revenue":20464.94,"cumulative_revenue":1318271.45,"mom_growth_pct":-54.12}],"department_operations":[{"department_name":"Radiology","total_appointments":201,"completed_count":149,"cancelled_count":21,"pending_count":31,"completion_rate_pct":74.13,"cancellation_rate_pct":10.45},{"department_name":"Pathology","total_appointments":187,"completed_count":135,"cancelled_count":27,"pending_count":25,"completion_rate_pct":72.19,"cancellation_rate_pct":14.44},{"department_name":"Infectious Diseases","total_appointments":161,"completed_count":115,"cancelled_count":25,"pending_count":21,"completion_rate_pct":71.43,"cancellation_rate_pct":15.53},{"department_name":"Pediatrics","total_appointments":153,"completed_count":118,"cancelled_count":12,"pending_count":23,"completion_rate_pct":77.12,"cancellation_rate_pct":7.84},{"department_name":"ENT","total_appointments":150,"completed_count":104,"cancelled_count":21,"pending_count":25,"completion_rate_pct":69.33,"cancellation_rate_pct":14.0},{"department_name":"Urology","total_appointments":138,"completed_count":109,"cancelled_count":13,"pending_count":16,"completion_rate_pct":78.99,"cancellation_rate_pct":9.42},{"department_name":"Gastroenterology","total_appointments":126,"completed_count":96,"cancelled_count":15,"pending_count":15,"completion_rate_pct":76.19,"cancellation_rate_pct":11.9},{"department_name":"Nephrology","total_appointments":117,"completed_count":95,"cancelled_count":8,"pending_count":14,"completion_rate_pct":81.2,"cancellation_rate_pct":6.84},{"department_name":"Oncology","total_appointments":110,"completed_count":79,"cancelled_count":17,"pending_count":14,"completion_rate_pct":71.82,"cancellation_rate_pct":15.45},{"department_name":"Hematology","total_appointments":105,"completed_count":78,"cancelled_count":16,"pending_count":11,"completion_rate_pct":74.29,"cancellation_rate_pct":15.24},{"department_name":"Physiotherapy","total_appointments":102,"completed_count":80,"cancelled_count":8,"pending_count":14,"completion_rate_pct":78.43,"cancellation_rate_pct":7.84},{"department_name":"Dermatology","total_appointments":95,"completed_count":67,"cancelled_count":15,"pending_count":13,"completion_rate_pct":70.53,"cancellation_rate_pct":15.79},{"department_name":"Gynecology","total_appointments":94,"completed_count":69,"cancelled_count":13,"pending_count":12,"completion_rate_pct":73.4,"cancellation_rate_pct":13.83},{"department_name":"General Surgery","total_appointments":93,"completed_count":73,"cancelled_count":12,"pending_count":8,"completion_rate_pct":78.49,"cancellation_rate_pct":12.9},{"department_name":"Orthopedics","total_appointments":89,"completed_count":62,"cancelled_count":12,"pending_count":15,"completion_rate_pct":69.66,"cancellation_rate_pct":13.48},{"department_name":"Endocrinology","total_appointments":89,"completed_count":57,"cancelled_count":13,"pending_count":19,"completion_rate_pct":64.04,"cancellation_rate_pct":14.61},{"department_name":"Anesthesiology","total_appointments":88,"completed_count":58,"cancelled_count":13,"pending_count":17,"completion_rate_pct":65.91,"cancellation_rate_pct":14.77},{"department_name":"Cardiology","total_appointments":81,"completed_count":51,"cancelled_count":18,"pending_count":12,"completion_rate_pct":62.96,"cancellation_rate_pct":22.22},{"department_name":"Emergency Medicine","total_appointments":73,"completed_count":52,"cancelled_count":7,"pending_count":14,"completion_rate_pct":71.23,"cancellation_rate_pct":9.59},{"department_name":"Neurology","total_appointments":72,"completed_count":42,"cancelled_count":19,"pending_count":11,"completion_rate_pct":58.33,"cancellation_rate_pct":26.39},{"department_name":"Pulmonology","total_appointments":64,"completed_count":47,"cancelled_count":7,"pending_count":10,"completion_rate_pct":73.44,"cancellation_rate_pct":10.94},{"department_name":"Rheumatology","total_appointments":60,"completed_count":39,"cancelled_count":9,"pending_count":12,"completion_rate_pct":65.0,"cancellation_rate_pct":15.0},{"department_name":"Psychiatry","total_appointments":58,"completed_count":41,"cancelled_count":7,"pending_count":10,"completion_rate_pct":70.69,"cancellation_rate_pct":12.07},{"department_name":"Ophthalmology","total_appointments":50,"completed_count":38,"cancelled_count":2,"pending_count":10,"completion_rate_pct":76.0,"cancellation_rate_pct":4.0},{"department_name":"Dentistry","total_appointments":44,"completed_count":33,"cancelled_count":3,"pending_count":8,"completion_rate_pct":75.0,"cancellation_rate_pct":6.82}],"top_doctors_revenue":[{"doctor_id":97,"full_name":"Ranveer Salvi","specialization":"Hematology","department_name":"Oncology","total_revenue":274151.19,"total_appointments":19},{"doctor_id":77,"full_name":"Ryan Pal","specialization":"Endocrinology","department_name":"ENT","total_revenue":267402.01,"total_appointments":19},{"doctor_id":32,"full_name":"Caleb Krishnamurthy","specialization":"Endocrinology","department_name":"Infectious Diseases","total_revenue":263257.47,"total_appointments":21},{"doctor_id":186,"full_name":"Ubika Mall","specialization":"ENT","department_name":"Infectious Diseases","total_revenue":260879.31,"total_appointments":19},{"doctor_id":112,"full_name":"Chandresh Walla","specialization":"General Surgery","department_name":"Pediatrics","total_revenue":260204.6,"total_appointments":20},{"doctor_id":95,"full_name":"Frederick Kade","specialization":"Psychiatry","department_name":"Radiology","total_revenue":247325.61,"total_appointments":21},{"doctor_id":65,"full_name":"Osha Natarajan","specialization":"Gynecology","department_name":"Nephrology","total_revenue":246709.26,"total_appointments":18},{"doctor_id":37,"full_name":"Inaya Bajwa","specialization":"Ophthalmology","department_name":"Urology","total_revenue":238971.8,"total_appointments":20},{"doctor_id":109,"full_name":"Faqid Krishna","specialization":"Orthopedics","department_name":"Pathology","total_revenue":236740.68,"total_appointments":22},{"doctor_id":20,"full_name":"Pooja Nazareth","specialization":"Rheumatology","department_name":"Anesthesiology","total_revenue":233533.25,"total_appointments":25},{"doctor_id":6,"full_name":"Om Walia","specialization":"Gynecology","department_name":"Pediatrics","total_revenue":230465.82,"total_appointments":19},{"doctor_id":141,"full_name":"Upma Sharma","specialization":"Pulmonology","department_name":"Urology","total_revenue":229473.48,"total_appointments":17}],"high_load_doctors_count":{"doctors_over_8_appts":175},"specialization_distribution":[{"specialization":"Gastroenterology","doctor_count":12},{"specialization":"Pathology","doctor_count":11},{"specialization":"Ophthalmology","doctor_count":11},{"specialization":"Oncology","doctor_count":11},{"specialization":"Hematology","doctor_count":11},{"specialization":"Rheumatology","doctor_count":10},{"specialization":"Emergency Medicine","doctor_count":10},{"specialization":"Infectious Diseases","doctor_count":9},{"specialization":"Endocrinology","doctor_count":9},{"specialization":"Orthopedics","doctor_count":8},{"specialization":"Family Medicine","doctor_count":8},{"specialization":"Pulmonology","doctor_count":7},{"specialization":"Physiotherapy","doctor_count":7},{"specialization":"Radiology","doctor_count":6},{"specialization":"Psychiatry","doctor_count":6},{"specialization":"General Surgery","doctor_count":6},{"specialization":"Dentistry","doctor_count":6},{"specialization":"Nephrology","doctor_count":5},{"specialization":"General Medicine","doctor_count":5},{"specialization":"Cardiology","doctor_count":5},{"specialization":"Anesthesiology","doctor_count":5},{"specialization":"Pediatrics","doctor_count":4},{"specialization":"Neurology","doctor_count":4},{"specialization":"ENT","doctor_count":4},{"specialization":"Urology","doctor_count":3},{"specialization":"Gynecology","doctor_count":3},{"specialization":"Dermatology","doctor_count":3}],"doctor_status":[{"status":"Active","count":168},{"status":"On Leave","count":8},{"status":"Retired","count":13}],"doctor_gender":[{"gender":"Female","count":77},{"gender":"Male","count":108},{"gender":"Other","count":4}],"patient_gender":[{"gender":"Female","count":132},{"gender":"Male","count":133},{"gender":"Other","count":155}],"patient_blood_group":[{"blood_group":"O+","count":135},{"blood_group":"A+","count":101},{"blood_group":"B+","count":81},{"blood_group":"A-","count":32},{"blood_group":"AB+","count":25},{"blood_group":"O-","count":18},{"blood_group":"B-","count":17},{"blood_group":"AB-","count":11}],"top_patient_cities":[{"city":"Mumbai","patient_count":25},{"city":"Gaya","patient_count":19},{"city":"Mysuru","patient_count":18},{"city":"Erode","patient_count":18},{"city":"Chennai","patient_count":18},{"city":"Puducherry","patient_count":17},{"city":"Bengaluru","patient_count":17},{"city":"Mangalore","patient_count":16},{"city":"Jaipur","patient_count":16},{"city":"Porbandar","patient_count":15}],"top_patients_revenue":[{"patient_name":"Meera Rao","city":"Jaipur","total_paid":11917.51},{"patient_name":"Navya Chatterjee","city":"Patna","total_paid":11054.6},{"patient_name":"Aditya Gupta","city":"Puducherry","total_paid":9908.74},{"patient_name":"Arjun Chatterjee","city":"Thiruvananthapuram","total_paid":8731.7},{"patient_name":"Arjun Bhatt","city":"Kolkata","total_paid":8673.82},{"patient_name":"Dev Malhotra","city":"Gaya","total_paid":8632.78},{"patient_name":"Yash Pillai","city":"Gwalior","total_paid":8451.95},{"patient_name":"Anika Bhatt","city":"Bharuch","total_paid":8228.15}],"appointment_status":[{"status":"Cancelled","count":333},{"status":"Completed","count":1887},{"status":"Scheduled","count":380}],"appointment_purpose":[{"purpose":"Vaccination","count":354},{"purpose":"Emergency","count":333},{"purpose":"Routine Checkup","count":332},{"purpose":"Second Opinion","count":328},{"purpose":"Lab Review","count":317},{"purpose":"Follow-up","count":315},{"purpose":"Surgery Consult","count":311},{"purpose":"Consultation","count":310}],"top_diagnoses":[{"diagnosis":"Anemia","count":117},{"diagnosis":"Hypertension","count":114},{"diagnosis":"Allergic Rhinitis","count":113},{"diagnosis":"Migraine","count":111},{"diagnosis":"Dermatitis","count":110},{"diagnosis":"Chronic Kidney Disease","count":107},{"diagnosis":"Asthma","count":106},{"diagnosis":"Anxiety Disorder","count":106},{"diagnosis":"Hypothyroidism","count":102},{"diagnosis":"Viral Fever","count":101}],"insurance_providers":[{"provider":"Self-Pay / Uninsured","count":104},{"provider":"National Insurance","count":50},{"provider":"HDFC Ergo","count":48},{"provider":"Star Health","count":47},{"provider":"Niva Bupa","count":46},{"provider":"Care Health","count":45},{"provider":"ICICI Lombard","count":41},{"provider":"Aditya Birla Health","count":39}],"readmission_30d_count":{"readmissions_30d":221},"top_medications":[{"generic_name":"Amoxicillin","brand_name":"Mox","times_prescribed":144},{"generic_name":"Ibuprofen","brand_name":"Brufen","times_prescribed":135},{"generic_name":"Sertraline","brand_name":"Zoloft","times_prescribed":132},{"generic_name":"Losartan","brand_name":"Losar","times_prescribed":130},{"generic_name":"Diclofenac","brand_name":"Voveran","times_prescribed":125},{"generic_name":"Paracetamol","brand_name":"Calpol","times_prescribed":124},{"generic_name":"Salbutamol","brand_name":"Asthalin","times_prescribed":122},{"generic_name":"Omeprazole","brand_name":"Omez","times_prescribed":120},{"generic_name":"Amlodipine","brand_name":"Amlong","times_prescribed":118},{"generic_name":"Metoprolol","brand_name":"Betaloc","times_prescribed":117}],"active_inpatients_sample":[{"patient_id":45,"patient_name":"Tara Joshi","admission_date":"2026-07-31","stay_days":21,"attending_doctor":"Saksham Bali","department_name":"Infectious Diseases"},{"patient_id":318,"patient_name":"Sai Bose","admission_date":"2026-07-31","stay_days":21,"attending_doctor":"Shivansh Pradhan","department_name":"Infectious Diseases"},{"patient_id":381,"patient_name":"Vivaan Kulkarni","admission_date":"2026-08-01","stay_days":20,"attending_doctor":"Watika Tara","department_name":"Radiology"},{"patient_id":253,"patient_name":"Aisha Reddy","admission_date":"2026-08-02","stay_days":19,"attending_doctor":"Teerth Sagar","department_name":"Gastroenterology"},{"patient_id":399,"patient_name":"Rohan Malhotra","admission_date":"2026-08-02","stay_days":19,"attending_doctor":"Barkha Ben","department_name":"Infectious Diseases"},{"patient_id":24,"patient_name":"Myra Sharma","admission_date":"2026-08-03","stay_days":18,"attending_doctor":"Saksham De","department_name":"Gynecology"},{"patient_id":54,"patient_name":"Trisha Bose","admission_date":"2026-08-03","stay_days":18,"attending_doctor":"Ekaja Dara","department_name":"Pulmonology"},{"patient_id":36,"patient_name":"Dev Gupta","admission_date":"2026-08-05","stay_days":16,"attending_doctor":"Osha Babu","department_name":"Oncology"},{"patient_id":261,"patient_name":"Pari Patel","admission_date":"2026-08-06","stay_days":15,"attending_doctor":"Frederick Kade","department_name":"Radiology"},{"patient_id":94,"patient_name":"Dev Joshi","admission_date":"2026-08-07","stay_days":14,"attending_doctor":"Peter Dara","department_name":"Pediatrics"},{"patient_id":264,"patient_name":"Karthik Iyer","admission_date":"2026-08-07","stay_days":14,"attending_doctor":"Teerth Sagar","department_name":"Gastroenterology"},{"patient_id":262,"patient_name":"Vanya Verma","admission_date":"2026-08-08","stay_days":13,"attending_doctor":"Xavier Choudhry","department_name":"Gastroenterology"}],"outstanding_bills_sample":[{"bill_id":318,"patient_name":"Riya Menon","net_amount":2674.56,"due_date":"2024-01-22","days_overdue":942},{"bill_id":604,"patient_name":"Yash Pillai","net_amount":570.0,"due_date":"2024-02-10","days_overdue":923},{"bill_id":890,"patient_name":"Dhruv Rao","net_amount":88.29,"due_date":"2024-02-21","days_overdue":912},{"bill_id":885,"patient_name":"Meera Gupta","net_amount":667.24,"due_date":"2024-02-22","days_overdue":911},{"bill_id":1625,"patient_name":"Vivaan Pillai","net_amount":244.1,"due_date":"2024-02-23","days_overdue":910},{"bill_id":582,"patient_name":"Vihaan Verma","net_amount":305.24,"due_date":"2024-02-26","days_overdue":907},{"bill_id":845,"patient_name":"Reyansh Iyer","net_amount":292.21,"due_date":"2024-02-29","days_overdue":904},{"bill_id":1353,"patient_name":"Tara Iyer","net_amount":229.5,"due_date":"2024-03-07","days_overdue":897},{"bill_id":1731,"patient_name":"Vanya Nair","net_amount":2771.66,"due_date":"2024-03-09","days_overdue":895},{"bill_id":1410,"patient_name":"Trisha Kapoor","net_amount":376.87,"due_date":"2024-03-16","days_overdue":888},{"bill_id":1364,"patient_name":"Nikhil Iyer","net_amount":259.28,"due_date":"2024-03-17","days_overdue":887},{"bill_id":1865,"patient_name":"Anika Kulkarni","net_amount":41.85,"due_date":"2024-03-17","days_overdue":887}],"department_budget_vs_revenue":[{"department_name":"Radiology","budget_allocation":1004000.0,"revenue":118498.7,"total_staff":59},{"department_name":"Pediatrics","budget_allocation":574000.0,"revenue":85022.06,"total_staff":39},{"department_name":"Pathology","budget_allocation":670000.0,"revenue":83743.91,"total_staff":48},{"department_name":"Infectious Diseases","budget_allocation":377000.0,"revenue":82132.11,"total_staff":71},{"department_name":"ENT","budget_allocation":613000.0,"revenue":75002.47,"total_staff":27},{"department_name":"Nephrology","budget_allocation":357000.0,"revenue":72666.85,"total_staff":78},{"department_name":"Gastroenterology","budget_allocation":1081000.0,"revenue":67369.88,"total_staff":40},{"department_name":"Oncology","budget_allocation":429000.0,"revenue":65240.13,"total_staff":109},{"department_name":"Urology","budget_allocation":800000.0,"revenue":62007.47,"total_staff":41},{"department_name":"Physiotherapy","budget_allocation":909000.0,"revenue":56749.55,"total_staff":101},{"department_name":"Hematology","budget_allocation":362000.0,"revenue":49001.82,"total_staff":33},{"department_name":"Dermatology","budget_allocation":726000.0,"revenue":48333.55,"total_staff":112},{"department_name":"General Surgery","budget_allocation":472000.0,"revenue":46729.28,"total_staff":107},{"department_name":"Gynecology","budget_allocation":863000.0,"revenue":42261.61,"total_staff":83},{"department_name":"Endocrinology","budget_allocation":788000.0,"revenue":41351.1,"total_staff":59},{"department_name":"Pulmonology","budget_allocation":647000.0,"revenue":40644.71,"total_staff":24},{"department_name":"Anesthesiology","budget_allocation":733000.0,"revenue":40162.97,"total_staff":80},{"department_name":"Rheumatology","budget_allocation":833000.0,"revenue":35331.34,"total_staff":89},{"department_name":"Cardiology","budget_allocation":639000.0,"revenue":34509.43,"total_staff":42},{"department_name":"Dentistry","budget_allocation":349000.0,"revenue":34320.69,"total_staff":96},{"department_name":"Psychiatry","budget_allocation":896000.0,"revenue":30664.36,"total_staff":102},{"department_name":"Orthopedics","budget_allocation":332000.0,"revenue":30436.41,"total_staff":78},{"department_name":"Neurology","budget_allocation":823000.0,"revenue":29620.06,"total_staff":115},{"department_name":"Emergency Medicine","budget_allocation":443000.0,"revenue":24078.89,"total_staff":67},{"department_name":"Ophthalmology","budget_allocation":374000.0,"revenue":22392.1,"total_staff":99}],"vip_patients":[{"patient_id":209,"patient_name":"Meera Rao","city":"Jaipur","total_consultations":9,"total_spend":11917.51,"avg_spend_per_visit":1324.17},{"patient_id":308,"patient_name":"Navya Chatterjee","city":"Patna","total_consultations":8,"total_spend":11054.6,"avg_spend_per_visit":1381.83},{"patient_id":222,"patient_name":"Aditya Gupta","city":"Puducherry","total_consultations":9,"total_spend":9908.74,"avg_spend_per_visit":1100.97},{"patient_id":191,"patient_name":"Arjun Chatterjee","city":"Thiruvananthapuram","total_consultations":6,"total_spend":8731.7,"avg_spend_per_visit":1455.28},{"patient_id":46,"patient_name":"Arjun Bhatt","city":"Kolkata","total_consultations":7,"total_spend":8673.82,"avg_spend_per_visit":1239.12},{"patient_id":7,"patient_name":"Dev Malhotra","city":"Gaya","total_consultations":7,"total_spend":8632.78,"avg_spend_per_visit":1233.25},{"patient_id":55,"patient_name":"Yash Pillai","city":"Gwalior","total_consultations":9,"total_spend":8451.95,"avg_spend_per_visit":939.11},{"patient_id":402,"patient_name":"Anika Bhatt","city":"Bharuch","total_consultations":6,"total_spend":8228.15,"avg_spend_per_visit":1371.36},{"patient_id":238,"patient_name":"Navya Gupta","city":"Jamshedpur","total_consultations":6,"total_spend":8216.08,"avg_spend_per_visit":1369.35},{"patient_id":175,"patient_name":"Diya Mehta","city":"Lucknow","total_consultations":5,"total_spend":7892.82,"avg_spend_per_visit":1578.56}],"doctor_experience_fee":[{"doctor_id":1,"name":"Nicholas Taneja","specialization":"Family Medicine","experience_years":17,"consultation_fee":205.0,"status":"Active"},{"doctor_id":2,"name":"Janani Reddy","specialization":"General Medicine","experience_years":2,"consultation_fee":210.0,"status":"Active"},{"doctor_id":3,"name":"Omaja Karan","specialization":"Gastroenterology","experience_years":19,"consultation_fee":215.0,"status":"Active"},{"doctor_id":4,"name":"Yashasvi Banik","specialization":"Hematology","experience_years":15,"consultation_fee":220.0,"status":"Active"},{"doctor_id":5,"name":"Vivaan Kapadia","specialization":"Orthopedics","experience_years":1,"consultation_fee":225.0,"status":"Retired"},{"doctor_id":6,"name":"Om Walia","specialization":"Gynecology","experience_years":4,"consultation_fee":230.0,"status":"Active"},{"doctor_id":7,"name":"Advika Murty","specialization":"Psychiatry","experience_years":19,"consultation_fee":235.0,"status":"Active"},{"doctor_id":8,"name":"Janaki Sura","specialization":"Oncology","experience_years":7,"consultation_fee":240.0,"status":"Active"},{"doctor_id":9,"name":"Krish Anne","specialization":"ENT","experience_years":25,"consultation_fee":245.0,"status":"Active"},{"doctor_id":10,"name":"Jackson Sarma","specialization":"Pediatrics","experience_years":24,"consultation_fee":250.0,"status":"Active"},{"doctor_id":11,"name":"Aadhya Kala","specialization":"Family Medicine","experience_years":14,"consultation_fee":255.0,"status":"Active"},{"doctor_id":12,"name":"Devansh Roy","specialization":"Dentistry","experience_years":14,"consultation_fee":260.0,"status":"Active"},{"doctor_id":13,"name":"Mitali Sur","specialization":"Ophthalmology","experience_years":19,"consultation_fee":265.0,"status":"Active"},{"doctor_id":14,"name":"Daksh Gola","specialization":"Gastroenterology","experience_years":22,"consultation_fee":270.0,"status":"Active"},{"doctor_id":15,"name":"Garima Mohan","specialization":"Pathology","experience_years":21,"consultation_fee":275.0,"status":"Active"},{"doctor_id":16,"name":"Widisha Raja","specialization":"Emergency Medicine","experience_years":23,"consultation_fee":280.0,"status":"Active"},{"doctor_id":17,"name":"Wakeeta Kalla","specialization":"Radiology","experience_years":4,"consultation_fee":285.0,"status":"Active"},{"doctor_id":18,"name":"Peter Dara","specialization":"Hematology","experience_years":5,"consultation_fee":290.0,"status":"Active"},{"doctor_id":19,"name":"Vaishnavi Oza","specialization":"Rheumatology","experience_years":29,"consultation_fee":295.0,"status":"Active"},{"doctor_id":20,"name":"Pooja Nazareth","specialization":"Rheumatology","experience_years":27,"consultation_fee":300.0,"status":"Active"},{"doctor_id":21,"name":"Jonathan Karnik","specialization":"Anesthesiology","experience_years":7,"consultation_fee":305.0,"status":"Active"},{"doctor_id":22,"name":"Krish Karnik","specialization":"Family Medicine","experience_years":30,"consultation_fee":310.0,"status":"Active"},{"doctor_id":23,"name":"Amrita Shroff","specialization":"Physiotherapy","experience_years":6,"consultation_fee":315.0,"status":"Active"},{"doctor_id":24,"name":"Ekalinga Biswas","specialization":"Pulmonology","experience_years":20,"consultation_fee":320.0,"status":"Active"},{"doctor_id":25,"name":"Laban Kari","specialization":"Pulmonology","experience_years":12,"consultation_fee":325.0,"status":"Active"},{"doctor_id":26,"name":"Akshay Banerjee","specialization":"Gastroenterology","experience_years":11,"consultation_fee":330.0,"status":"Active"},{"doctor_id":27,"name":"Bachittar Shan","specialization":"General Surgery","experience_years":12,"consultation_fee":335.0,"status":"Active"},{"doctor_id":28,"name":"Amaira Rege","specialization":"Physiotherapy","experience_years":13,"consultation_fee":340.0,"status":"Active"},{"doctor_id":29,"name":"Nikita Soman","specialization":"Hematology","experience_years":8,"consultation_fee":345.0,"status":"Active"},{"doctor_id":30,"name":"Gauri Krish","specialization":"General Surgery","experience_years":28,"consultation_fee":350.0,"status":"Retired"},{"doctor_id":31,"name":"Anthony Chopra","specialization":"Family Medicine","experience_years":29,"consultation_fee":355.0,"status":"Active"},{"doctor_id":32,"name":"Caleb Krishnamurthy","specialization":"Endocrinology","experience_years":30,"consultation_fee":360.0,"status":"Active"},{"doctor_id":33,"name":"Teerth Sagar","specialization":"Emergency Medicine","experience_years":12,"consultation_fee":365.0,"status":"Active"},{"doctor_id":34,"name":"Ria Gera","specialization":"Cardiology","experience_years":1,"consultation_fee":370.0,"status":"Active"},{"doctor_id":35,"name":"Gaurang Thakur","specialization":"Nephrology","experience_years":1,"consultation_fee":375.0,"status":"Active"},{"doctor_id":36,"name":"Peter Prakash","specialization":"Infectious Diseases","experience_years":17,"consultation_fee":380.0,"status":"Active"},{"doctor_id":37,"name":"Inaya Bajwa","specialization":"Ophthalmology","experience_years":23,"consultation_fee":385.0,"status":"Active"},{"doctor_id":38,"name":"Barkha Ben","specialization":"Ophthalmology","experience_years":5,"consultation_fee":390.0,"status":"Active"},{"doctor_id":39,"name":"Jalsa Bali","specialization":"Ophthalmology","experience_years":7,"consultation_fee":395.0,"status":"Active"},{"doctor_id":40,"name":"Brinda Gola","specialization":"Emergency Medicine","experience_years":16,"consultation_fee":400.0,"status":"Active"},{"doctor_id":41,"name":"Sneha Pant","specialization":"Ophthalmology","experience_years":25,"consultation_fee":405.0,"status":"Active"},{"doctor_id":42,"name":"Raghav Varughese","specialization":"Dermatology","experience_years":19,"consultation_fee":410.0,"status":"Active"},{"doctor_id":43,"name":"Devansh Sheth","specialization":"Nephrology","experience_years":3,"consultation_fee":415.0,"status":"Active"},{"doctor_id":44,"name":"Anamika Borah","specialization":"Anesthesiology","experience_years":11,"consultation_fee":420.0,"status":"Active"},{"doctor_id":45,"name":"Upasna Tailor","specialization":"Oncology","experience_years":20,"consultation_fee":425.0,"status":"Active"},{"doctor_id":46,"name":"Veer Lad","specialization":"Pathology","experience_years":1,"consultation_fee":430.0,"status":"Active"},{"doctor_id":47,"name":"Lakshmi Prashad","specialization":"Cardiology","experience_years":20,"consultation_fee":435.0,"status":"Retired"},{"doctor_id":48,"name":"Garima Batra","specialization":"Gastroenterology","experience_years":11,"consultation_fee":440.0,"status":"Active"},{"doctor_id":49,"name":"George Issac","specialization":"Neurology","experience_years":17,"consultation_fee":445.0,"status":"Active"},{"doctor_id":50,"name":"Arjun Saha","specialization":"Physiotherapy","experience_years":25,"consultation_fee":450.0,"status":"Retired"},{"doctor_id":51,"name":"Osha Babu","specialization":"Infectious Diseases","experience_years":8,"consultation_fee":455.0,"status":"Active"},{"doctor_id":52,"name":"Abdul Balay","specialization":"General Medicine","experience_years":29,"consultation_fee":460.0,"status":"Active"},{"doctor_id":53,"name":"Ubika Ramachandran","specialization":"Gastroenterology","experience_years":25,"consultation_fee":465.0,"status":"Active"},{"doctor_id":54,"name":"Udant Sahni","specialization":"Endocrinology","experience_years":9,"consultation_fee":470.0,"status":"Active"},{"doctor_id":55,"name":"Ryan Deol","specialization":"Oncology","experience_years":20,"consultation_fee":475.0,"status":"Active"},{"doctor_id":56,"name":"Chakrika Ram","specialization":"General Medicine","experience_years":12,"consultation_fee":480.0,"status":"Active"},{"doctor_id":57,"name":"Ojasvi Datta","specialization":"Endocrinology","experience_years":25,"consultation_fee":485.0,"status":"Active"},{"doctor_id":58,"name":"Jatin Minhas","specialization":"Pathology","experience_years":1,"consultation_fee":490.0,"status":"On Leave"},{"doctor_id":59,"name":"Matthew Ramaswamy","specialization":"Oncology","experience_years":4,"consultation_fee":495.0,"status":"Active"},{"doctor_id":60,"name":"Aryan Nagy","specialization":"Dentistry","experience_years":30,"consultation_fee":500.0,"status":"Active"},{"doctor_id":61,"name":"Rohan Krishnamurthy","specialization":"Ophthalmology","experience_years":27,"consultation_fee":505.0,"status":"Active"},{"doctor_id":62,"name":"Tarak Grover","specialization":"ENT","experience_years":5,"consultation_fee":510.0,"status":"Retired"},{"doctor_id":63,"name":"Yochana Wable","specialization":"Pathology","experience_years":28,"consultation_fee":515.0,"status":"Active"},{"doctor_id":64,"name":"Watika Tara","specialization":"Nephrology","experience_years":5,"consultation_fee":520.0,"status":"Retired"},{"doctor_id":65,"name":"Osha Natarajan","specialization":"Gynecology","experience_years":9,"consultation_fee":525.0,"status":"Active"},{"doctor_id":66,"name":"Zayan Mitter","specialization":"Rheumatology","experience_years":22,"consultation_fee":530.0,"status":"Active"},{"doctor_id":67,"name":"Ansh Sahota","specialization":"Hematology","experience_years":6,"consultation_fee":535.0,"status":"Active"},{"doctor_id":68,"name":"Saksham De","specialization":"ENT","experience_years":12,"consultation_fee":540.0,"status":"Active"},{"doctor_id":69,"name":"Yashvi Wadhwa","specialization":"Hematology","experience_years":13,"consultation_fee":545.0,"status":"Active"},{"doctor_id":70,"name":"Isha Bail","specialization":"Orthopedics","experience_years":24,"consultation_fee":550.0,"status":"Active"},{"doctor_id":71,"name":"Tanmayi Shankar","specialization":"Hematology","experience_years":3,"consultation_fee":555.0,"status":"Active"},{"doctor_id":72,"name":"Ekalinga Dua","specialization":"Psychiatry","experience_years":30,"consultation_fee":560.0,"status":"Active"},{"doctor_id":73,"name":"Yauvani Bhakta","specialization":"Neurology","experience_years":20,"consultation_fee":565.0,"status":"Active"},{"doctor_id":74,"name":"Oeshi Palla","specialization":"General Surgery","experience_years":16,"consultation_fee":570.0,"status":"Active"},{"doctor_id":75,"name":"Udyati Bumb","specialization":"Emergency Medicine","experience_years":29,"consultation_fee":575.0,"status":"Active"},{"doctor_id":76,"name":"Falguni Reddy","specialization":"Neurology","experience_years":7,"consultation_fee":580.0,"status":"Active"},{"doctor_id":77,"name":"Ryan Pal","specialization":"Endocrinology","experience_years":14,"consultation_fee":585.0,"status":"Active"},{"doctor_id":78,"name":"Upma Barad","specialization":"Radiology","experience_years":20,"consultation_fee":590.0,"status":"Active"},{"doctor_id":79,"name":"Bhavini Wali","specialization":"Pathology","experience_years":23,"consultation_fee":595.0,"status":"Active"},{"doctor_id":80,"name":"Manthan Borra","specialization":"Hematology","experience_years":5,"consultation_fee":600.0,"status":"Active"},{"doctor_id":81,"name":"Jacob Deol","specialization":"Rheumatology","experience_years":1,"consultation_fee":605.0,"status":"Retired"},{"doctor_id":82,"name":"Pranav Sheth","specialization":"Dentistry","experience_years":9,"consultation_fee":610.0,"status":"Active"},{"doctor_id":83,"name":"Prisha Kumar","specialization":"Physiotherapy","experience_years":11,"consultation_fee":615.0,"status":"Retired"},{"doctor_id":84,"name":"Harsh Chahal","specialization":"Pulmonology","experience_years":20,"consultation_fee":620.0,"status":"Active"},{"doctor_id":85,"name":"Pooja Mody","specialization":"Oncology","experience_years":6,"consultation_fee":625.0,"status":"Active"},{"doctor_id":86,"name":"Pooja More","specialization":"Oncology","experience_years":20,"consultation_fee":630.0,"status":"Active"},{"doctor_id":87,"name":"Anika Kulkarni","specialization":"Gastroenterology","experience_years":8,"consultation_fee":635.0,"status":"Active"},{"doctor_id":88,"name":"Hiral Minhas","specialization":"Hematology","experience_years":9,"consultation_fee":640.0,"status":"Active"},{"doctor_id":89,"name":"Osha Gaba","specialization":"Gastroenterology","experience_years":28,"consultation_fee":645.0,"status":"Active"},{"doctor_id":90,"name":"Saksham Bali","specialization":"Pathology","experience_years":14,"consultation_fee":650.0,"status":"Active"},{"doctor_id":91,"name":"Wridesh Kadakia","specialization":"Nephrology","experience_years":11,"consultation_fee":655.0,"status":"Active"},{"doctor_id":92,"name":"Anirudh Mistry","specialization":"Infectious Diseases","experience_years":2,"consultation_fee":660.0,"status":"Active"},{"doctor_id":93,"name":"Orinder Pradhan","specialization":"Endocrinology","experience_years":3,"consultation_fee":665.0,"status":"Retired"},{"doctor_id":94,"name":"Damini Oak","specialization":"Psychiatry","experience_years":20,"consultation_fee":670.0,"status":"Active"},{"doctor_id":95,"name":"Frederick Kade","specialization":"Psychiatry","experience_years":30,"consultation_fee":675.0,"status":"Active"},{"doctor_id":96,"name":"Lajita Kanda","specialization":"Infectious Diseases","experience_years":30,"consultation_fee":680.0,"status":"Active"},{"doctor_id":97,"name":"Ranveer Salvi","specialization":"Hematology","experience_years":29,"consultation_fee":685.0,"status":"Active"},{"doctor_id":98,"name":"Upkaar Sinha","specialization":"Urology","experience_years":21,"consultation_fee":690.0,"status":"Active"},{"doctor_id":99,"name":"Yadavi Nagarajan","specialization":"Urology","experience_years":29,"consultation_fee":695.0,"status":"Active"},{"doctor_id":100,"name":"Aditya Dixit","specialization":"Infectious Diseases","experience_years":11,"consultation_fee":200.0,"status":"Active"},{"doctor_id":101,"name":"Siya Deshpande","specialization":"Emergency Medicine","experience_years":18,"consultation_fee":205.0,"status":"Active"},{"doctor_id":102,"name":"Kiaan Chanda","specialization":"Rheumatology","experience_years":6,"consultation_fee":210.0,"status":"On Leave"},{"doctor_id":103,"name":"Ayush Mammen","specialization":"Ophthalmology","experience_years":26,"consultation_fee":215.0,"status":"Active"},{"doctor_id":104,"name":"Charvi Dewan","specialization":"Cardiology","experience_years":13,"consultation_fee":220.0,"status":"Active"},{"doctor_id":105,"name":"Fiyaz Dugal","specialization":"Infectious Diseases","experience_years":20,"consultation_fee":225.0,"status":"Active"},{"doctor_id":106,"name":"Jack Bhargava","specialization":"Physiotherapy","experience_years":3,"consultation_fee":230.0,"status":"Active"},{"doctor_id":107,"name":"Urvi Buch","specialization":"Anesthesiology","experience_years":19,"consultation_fee":235.0,"status":"Active"},{"doctor_id":108,"name":"Devika Sidhu","specialization":"Dentistry","experience_years":30,"consultation_fee":240.0,"status":"Active"},{"doctor_id":109,"name":"Faqid Krishna","specialization":"Orthopedics","experience_years":21,"consultation_fee":245.0,"status":"Active"},{"doctor_id":110,"name":"Maanas Chopra","specialization":"Pathology","experience_years":26,"consultation_fee":250.0,"status":"Active"},{"doctor_id":111,"name":"Saanvi Kumar","specialization":"Radiology","experience_years":19,"consultation_fee":255.0,"status":"Active"},{"doctor_id":112,"name":"Chandresh Walla","specialization":"General Surgery","experience_years":24,"consultation_fee":260.0,"status":"Active"},{"doctor_id":113,"name":"Ubika Shah","specialization":"Gastroenterology","experience_years":16,"consultation_fee":265.0,"status":"Active"},{"doctor_id":114,"name":"Urishilla Bala","specialization":"Oncology","experience_years":27,"consultation_fee":270.0,"status":"Active"},{"doctor_id":115,"name":"Tripti Kannan","specialization":"Radiology","experience_years":19,"consultation_fee":275.0,"status":"Active"},{"doctor_id":116,"name":"Widisha Acharya","specialization":"Pediatrics","experience_years":5,"consultation_fee":280.0,"status":"Active"},{"doctor_id":117,"name":"Falan Sankaran","specialization":"Rheumatology","experience_years":1,"consultation_fee":285.0,"status":"Active"},{"doctor_id":118,"name":"Manya Bhattacharyya","specialization":"Rheumatology","experience_years":4,"consultation_fee":290.0,"status":"Active"},{"doctor_id":119,"name":"Girindra Raghavan","specialization":"Gastroenterology","experience_years":18,"consultation_fee":295.0,"status":"Retired"},{"doctor_id":120,"name":"Ladli Pal","specialization":"Emergency Medicine","experience_years":1,"consultation_fee":300.0,"status":"Active"},{"doctor_id":121,"name":"Hemani Sathe","specialization":"Hematology","experience_years":7,"consultation_fee":305.0,"status":"Active"},{"doctor_id":122,"name":"Baghyawati Kota","specialization":"Gynecology","experience_years":20,"consultation_fee":310.0,"status":"On Leave"},{"doctor_id":123,"name":"Ijaya Pillai","specialization":"Infectious Diseases","experience_years":30,"consultation_fee":315.0,"status":"Active"},{"doctor_id":124,"name":"Mohini Dewan","specialization":"Hematology","experience_years":13,"consultation_fee":320.0,"status":"On Leave"},{"doctor_id":125,"name":"Indali Mahal","specialization":"Neurology","experience_years":1,"consultation_fee":325.0,"status":"Active"},{"doctor_id":126,"name":"Nidhi Nagar","specialization":"Gastroenterology","experience_years":25,"consultation_fee":330.0,"status":"Active"},{"doctor_id":127,"name":"Dipta Dora","specialization":"Dermatology","experience_years":19,"consultation_fee":335.0,"status":"Active"},{"doctor_id":128,"name":"Upma Sarma","specialization":"Oncology","experience_years":15,"consultation_fee":340.0,"status":"Active"},{"doctor_id":129,"name":"Jhalak Dayal","specialization":"Orthopedics","experience_years":7,"consultation_fee":345.0,"status":"Active"},{"doctor_id":130,"name":"Aditya Bhat","specialization":"Infectious Diseases","experience_years":23,"consultation_fee":350.0,"status":"Active"},{"doctor_id":131,"name":"Dayamai Mody","specialization":"Ophthalmology","experience_years":29,"consultation_fee":355.0,"status":"Active"},{"doctor_id":132,"name":"Pallavi Bali","specialization":"Physiotherapy","experience_years":3,"consultation_fee":360.0,"status":"Active"},{"doctor_id":133,"name":"Mitesh Bera","specialization":"Family Medicine","experience_years":9,"consultation_fee":365.0,"status":"Active"},{"doctor_id":134,"name":"Anirudh Lall","specialization":"Radiology","experience_years":7,"consultation_fee":370.0,"status":"Active"},{"doctor_id":135,"name":"Tarak Vala","specialization":"Dentistry","experience_years":21,"consultation_fee":375.0,"status":"Active"},{"doctor_id":136,"name":"Elijah Solanki","specialization":"Nephrology","experience_years":20,"consultation_fee":380.0,"status":"Active"},{"doctor_id":137,"name":"Shivansh Pradhan","specialization":"Pathology","experience_years":20,"consultation_fee":385.0,"status":"Active"},{"doctor_id":138,"name":"Christopher Chacko","specialization":"Physiotherapy","experience_years":15,"consultation_fee":390.0,"status":"Active"},{"doctor_id":139,"name":"Ucchal Bhatnagar","specialization":"Pathology","experience_years":15,"consultation_fee":395.0,"status":"Active"},{"doctor_id":140,"name":"Atharv Koshy","specialization":"Family Medicine","experience_years":19,"consultation_fee":400.0,"status":"Active"},{"doctor_id":141,"name":"Upma Sharma","specialization":"Pulmonology","experience_years":21,"consultation_fee":405.0,"status":"Active"},{"doctor_id":142,"name":"Aahana Basak","specialization":"Oncology","experience_years":4,"consultation_fee":410.0,"status":"Active"},{"doctor_id":143,"name":"Anya Mahal","specialization":"Dermatology","experience_years":8,"consultation_fee":415.0,"status":"Active"},{"doctor_id":144,"name":"Chandani Sankaran","specialization":"General Medicine","experience_years":17,"consultation_fee":420.0,"status":"Retired"},{"doctor_id":145,"name":"Laksh Mutti","specialization":"Orthopedics","experience_years":6,"consultation_fee":425.0,"status":"Active"},{"doctor_id":146,"name":"Warinder Cheema","specialization":"Anesthesiology","experience_years":28,"consultation_fee":430.0,"status":"Active"},{"doctor_id":147,"name":"Varenya Thakkar","specialization":"Pulmonology","experience_years":18,"consultation_fee":435.0,"status":"Active"},{"doctor_id":148,"name":"Zaitra Madan","specialization":"Emergency Medicine","experience_years":2,"consultation_fee":440.0,"status":"Active"},{"doctor_id":149,"name":"Vrishti Deshmukh","specialization":"Pediatrics","experience_years":27,"consultation_fee":445.0,"status":"Active"},{"doctor_id":150,"name":"Unnati Contractor","specialization":"Emergency Medicine","experience_years":26,"consultation_fee":450.0,"status":"Active"},{"doctor_id":151,"name":"Xavier Choudhry","specialization":"Endocrinology","experience_years":23,"consultation_fee":455.0,"status":"Active"},{"doctor_id":152,"name":"Mugdha Chadha","specialization":"Pulmonology","experience_years":25,"consultation_fee":460.0,"status":"Active"},{"doctor_id":153,"name":"Luke Chada","specialization":"Emergency Medicine","experience_years":30,"consultation_fee":465.0,"status":"Active"},{"doctor_id":154,"name":"Dipta Luthra","specialization":"Orthopedics","experience_years":15,"consultation_fee":470.0,"status":"Active"},{"doctor_id":155,"name":"Oliver Dayal","specialization":"Pathology","experience_years":5,"consultation_fee":475.0,"status":"Active"},{"doctor_id":156,"name":"Warjas Tata","specialization":"Endocrinology","experience_years":29,"consultation_fee":480.0,"status":"Active"},{"doctor_id":157,"name":"Parth Kurian","specialization":"General Surgery","experience_years":29,"consultation_fee":485.0,"status":"Active"},{"doctor_id":158,"name":"Krish Brar","specialization":"Endocrinology","experience_years":6,"consultation_fee":490.0,"status":"Active"},{"doctor_id":159,"name":"Turvi Mannan","specialization":"General Medicine","experience_years":23,"consultation_fee":495.0,"status":"Retired"},{"doctor_id":160,"name":"Amol Shah","specialization":"Ophthalmology","experience_years":2,"consultation_fee":500.0,"status":"Active"},{"doctor_id":161,"name":"Yashoda Wason","specialization":"General Surgery","experience_years":14,"consultation_fee":505.0,"status":"Active"},{"doctor_id":162,"name":"Rajata Jhaveri","specialization":"Gastroenterology","experience_years":17,"consultation_fee":510.0,"status":"Active"},{"doctor_id":163,"name":"Bina Bobal","specialization":"Orthopedics","experience_years":11,"consultation_fee":515.0,"status":"Active"},{"doctor_id":164,"name":"Janya Ravi","specialization":"Family Medicine","experience_years":12,"consultation_fee":520.0,"status":"Active"},{"doctor_id":165,"name":"Ekantika Virk","specialization":"Psychiatry","experience_years":2,"consultation_fee":525.0,"status":"Active"},{"doctor_id":166,"name":"Deepa Chada","specialization":"Ophthalmology","experience_years":7,"consultation_fee":530.0,"status":"Retired"},{"doctor_id":167,"name":"Yagnesh Thaman","specialization":"Ophthalmology","experience_years":1,"consultation_fee":535.0,"status":"Active"},{"doctor_id":168,"name":"Vasana Keer","specialization":"Family Medicine","experience_years":29,"consultation_fee":540.0,"status":"Active"},{"doctor_id":169,"name":"Ishaan Chandran","specialization":"Cardiology","experience_years":16,"consultation_fee":545.0,"status":"On Leave"},{"doctor_id":170,"name":"Jeremiah Rama","specialization":"Infectious Diseases","experience_years":10,"consultation_fee":550.0,"status":"On Leave"},{"doctor_id":171,"name":"Advik Chhabra","specialization":"Anesthesiology","experience_years":10,"consultation_fee":555.0,"status":"Active"},{"doctor_id":172,"name":"Suhani Mani","specialization":"Pediatrics","experience_years":30,"consultation_fee":560.0,"status":"Active"},{"doctor_id":173,"name":"Ekalinga Varma","specialization":"Endocrinology","experience_years":19,"consultation_fee":565.0,"status":"On Leave"},{"doctor_id":174,"name":"Aarav Sehgal","specialization":"Radiology","experience_years":11,"consultation_fee":570.0,"status":"On Leave"},{"doctor_id":175,"name":"Chanakya Anne","specialization":"Cardiology","experience_years":29,"consultation_fee":575.0,"status":"Active"},{"doctor_id":176,"name":"Varsha Verma","specialization":"Oncology","experience_years":20,"consultation_fee":580.0,"status":"Active"},{"doctor_id":177,"name":"Rachit Kashyap","specialization":"Rheumatology","experience_years":16,"consultation_fee":585.0,"status":"Active"},{"doctor_id":178,"name":"Siya Parekh","specialization":"Emergency Medicine","experience_years":16,"consultation_fee":590.0,"status":"Active"},{"doctor_id":179,"name":"Arin Prashad","specialization":"Orthopedics","experience_years":24,"consultation_fee":595.0,"status":"Active"},{"doctor_id":180,"name":"Balendra Divan","specialization":"Gastroenterology","experience_years":1,"consultation_fee":600.0,"status":"Active"},{"doctor_id":181,"name":"Hema Ganguly","specialization":"Oncology","experience_years":22,"consultation_fee":605.0,"status":"Active"},{"doctor_id":182,"name":"Nidhi Dugar","specialization":"Pathology","experience_years":12,"consultation_fee":610.0,"status":"Active"},{"doctor_id":183,"name":"Karan Devan","specialization":"Dentistry","experience_years":19,"consultation_fee":615.0,"status":"Active"},{"doctor_id":184,"name":"Lajita Wali","specialization":"Urology","experience_years":7,"consultation_fee":620.0,"status":"Active"},{"doctor_id":185,"name":"Ekaja Dara","specialization":"Psychiatry","experience_years":8,"consultation_fee":625.0,"status":"Active"},{"doctor_id":186,"name":"Ubika Mall","specialization":"ENT","experience_years":9,"consultation_fee":630.0,"status":"Active"},{"doctor_id":187,"name":"Edhitha Ratta","specialization":"Rheumatology","experience_years":21,"consultation_fee":635.0,"status":"Active"},{"doctor_id":188,"name":"Arjun Grewal","specialization":"Pulmonology","experience_years":5,"consultation_fee":640.0,"status":"Active"},{"doctor_id":189,"name":"Gautam Dhar","specialization":"Rheumatology","experience_years":30,"consultation_fee":645.0,"status":"Active"}],"senior_active_doctors":{"count":115},"meta":{"generated_at":"2026-08-21T08:50:18.664975Z","note":"Departments and doctors are the real seed dataset from the project SQL scripts. Patients, appointments, bills, and medications are synthetically generated (seeded, reproducible) to satisfy the schema and foreign keys, since no seed data for those tables was provided. All KPIs on this dashboard are computed live from this dataset using the project's own analytical SQL logic (ported to SQLite for static hosting)."}}</script>
+<script src="dashboard.js"></script>
+</body>
+</html>
